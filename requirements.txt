@@ -1,0 +1,5 @@
+pandas==2.2.3
+numpy==1.26.4
+ccxt==4.3.97
+pyyaml==6.0.2
+python-telegram-bot==21.10

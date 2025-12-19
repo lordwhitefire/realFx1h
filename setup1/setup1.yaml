@@ -1,0 +1,37 @@
+# --------- CORE 4 PATTERNS ONLY ---------
+patterns:
+  bullish: [hammer, bullish_engulfing]
+  bearish: [shooting_star, bearish_engulfing]
+  engulfing_min_ratio: 1.0
+
+# --------- FILTERS ---------
+filters:
+  min_touches: 3
+  touch_window_pips: 15
+  volume_mult: 1.8
+  rsi_oversold: 35
+  rsi_overbought: 65
+  ema_fast: 9
+  ema_slow: 21
+  alert_window_min: 10
+  session_ban: "00-02"
+
+# --------- SUCCESS-RATE GATE ---------
+history:
+  lookback_setups: 10
+  min_win_rate: 0.68
+
+# --------- BINARY RISK (no SL/TP pips) ---------
+risk:
+  stake_pct: 1.0
+  max_trades_per_day: 6
+  max_trades_per_pair: 3
+  daily_stop_pct: 5
+  weekly_stop_pct: 10
+
+# --------- ALERT TEMPLATE ---------
+alert:
+  template: |
+    🔥 {pair} → {signal} (1h binary NOW!) {time} UTC
+    Pattern: {pattern} | RSI: {rsi} | EMA: {ema_status}
+    Last 10 identical: {win_rate}% win

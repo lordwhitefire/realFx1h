@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfgs
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+logs/
+reports/
+backtest_reports/
+__pycache__/
+
+# Configuration files with sensitive data
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Test and output directories
+test_reports/
+tmp/
+temp/
+*.log
+
+# Backtest results
+backtest_results/
+optimization_results/
+
+# Data files (if storing locally)
+data/
+*.csv
+*.json
+*.pkl
+*.h5
+*.feather
+*.parquet
+
+# Database
+*.db
+*.sqlite3
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/

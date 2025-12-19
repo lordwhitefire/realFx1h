@@ -1,0 +1,359 @@
+# ==============================================
+# Setup1 Configuration - Hammer & Shooting Star
+# Binary Options Trading Setup
+# ==============================================
+
+# --- Setup Information ---
+setup_info:
+  name: "setup1"
+  display_name: "Hammer & Shooting Star with S/R"
+  version: "1.0.0"
+  author: "Trading Setup Scanner"
+  description: "Detects Hammer and Shooting Star patterns at support/resistance levels for binary options trading"
+  created_date: "2024-01-01"
+  last_modified: "2024-01-01"
+  
+  # Trading parameters
+  timeframe: "5min"
+  trade_type: "binary_options"  # binary_options, regular_trading
+  expiry_period: "15min"  # For binary options
+  signal_types: ["CALL", "PUT"]
+  
+  # Patterns detected
+  patterns:
+    - "hammer"
+    - "shooting_star"
+  
+  # Technical indicators used
+  indicators:
+    - "rsi"
+    - "support_resistance"
+    - "triple_touch"
+  
+  # Risk profile
+  risk_level: "medium"
+  win_rate_target: 65
+  avg_win_loss_ratio: 1.8
+
+# --- Pattern Detection Parameters ---
+patterns:
+  # Candlestick pattern settings
+  hammer:
+    min_body_ratio: 0.1
+    min_lower_shadow_ratio: 2.0
+    max_upper_shadow_ratio: 0.5
+    require_confirmation: true
+    
+  shooting_star:
+    min_body_ratio: 0.1
+    min_upper_shadow_ratio: 2.0
+    max_lower_shadow_ratio: 0.5
+    require_confirmation: true
+  
+  # Pattern filters
+  min_body_size_pips: 5
+  min_pattern_quality: 0.7
+  require_volume_confirmation: true
+
+# --- Support/Resistance Detection ---
+support_resistance:
+  # Level detection
+  lookback_period: 100
+  min_touch_count: 3
+  touch_window_pips: 15
+  cluster_window_pips: 20
+  
+  # Level strength
+  min_level_strength: 0.6
+  recent_touch_weight: 1.5
+  historical_touch_weight: 1.0
+  
+  # Validation
+  require_price_rejection: true
+  rejection_min_pips: 10
+  validate_with_volume: true
+
+# --- Technical Indicators ---
+indicators:
+  # RSI settings
+  rsi:
+    period: 14
+    overbought: 65
+    oversold: 35
+    divergence_lookback: 20
+    require_extreme: true
+    
+  # Moving Averages (for trend confirmation)
+  moving_averages:
+    ema_fast: 9
+    ema_slow: 21
+    ema_trend: 50
+    require_alignment: false
+    
+  # Volume analysis
+  volume:
+    ma_period: 20
+    min_multiplier: 1.5
+    require_above_average: true
+
+# --- Filters ---
+filters:
+  # RSI filters
+  require_rsi_extreme: true
+  rsi_overbought: 65
+  rsi_oversold: 35
+  rsi_divergence_lookback: 5
+  
+  # Support/Resistance filters
+  min_touches: 3
+  touch_window_pips: 15
+  require_triple_touch: true
+  
+  # Volume filters
+  require_volume_confirmation: true
+  volume_multiplier: 1.8
+  min_volume: 1000000
+  
+  # Trend filters
+  require_trend_alignment: false
+  trend_timeframe: "15min"
+  trend_indicator: "ema"
+  
+  # Volatility filters
+  min_atr_pct: 0.001
+  max_atr_pct: 0.05
+  
+  # Time filters
+  avoid_news_events: true
+  news_buffer_minutes: 30
+  avoid_session_open: true
+  session_open_buffer_minutes: 15
+
+# --- Signal Generation ---
+signal:
+  # Confidence calculation
+  base_confidence: 50
+  rsi_weight: 25
+  pattern_weight: 30
+  volume_weight: 15
+  sr_weight: 30
+  
+  # Minimum requirements
+  min_confidence: 70
+  min_pattern_score: 0.6
+  min_rsi_extreme: 10  # How far from 50 RSI
+  
+  # Signal validation
+  require_candle_confirmation: true
+  confirmation_candle_min_size: 0.3
+  max_confirmation_candles: 1
+
+# --- Binary Options Strategy ---
+binary_options:
+  # Trade parameters
+  expiry_time: "15min"
+  stake_percentage: 1.0
+  max_stake_percentage: 5.0
+  min_payout_ratio: 0.70
+  
+  # Entry rules
+  entry_time: "next_candle_open"
+  allow_early_entry: false
+  early_entry_max_pips: 5
+  
+  # Exit rules (for backtesting)
+  expiry_type: "time_based"  # time_based, price_based
+  check_expiry_price: true
+  expiry_buffer_seconds: 30
+  
+  # Money management
+  max_trades_per_day: 6
+  max_trades_per_pair: 3
+  daily_loss_limit: 5.0
+  weekly_loss_limit: 10.0
+
+# --- Regular Trading Strategy (Alternative) ---
+regular_trading:
+  # Position sizing
+  risk_per_trade_pct: 1.0
+  max_position_size_pct: 5.0
+  use_kelly_criterion: false
+  
+  # Stop loss
+  stop_loss_type: "percentage"  # percentage, atr, pattern_based
+  stop_loss_pct: 1.0
+  stop_loss_atr_multiplier: 2.0
+  
+  # Take profit
+  take_profit_type: "risk_reward"  # percentage, risk_reward, resistance
+  take_profit_pct: 2.0
+  risk_reward_ratio: 2.0
+  
+  # Trailing stop
+  use_trailing_stop: false
+  trailing_stop_pct: 0.5
+  trailing_start_pct: 1.0
+  
+  # Time-based exit
+  max_holding_period: "4h"
+  end_of_day_exit: true
+
+# --- Risk Management ---
+risk_management:
+  # Position sizing
+  fixed_position_size: 0
+  percentage_position_size: true
+  kelly_position_size: false
+  
+  # Stop loss rules
+  use_stop_loss: true
+  stop_loss_type: "pattern_based"  # pattern_based, percentage, atr
+  stop_loss_multiplier: 1.0
+  
+  # Take profit rules
+  use_take_profit: true
+  take_profit_type: "risk_reward"  # risk_reward, percentage, resistance
+  risk_reward_ratio: 2.0
+  
+  # Trade filters
+  min_volume: 1000000
+  min_volatility: 0.001
+  max_spread_pips: 3
+  
+  # Correlation limits
+  max_correlated_trades: 2
+  correlation_threshold: 0.7
+
+# --- Backtest Settings ---
+backtest:
+  # General settings
+  mode: "historical"  # historical, walk_forward, monte_carlo
+  initial_capital: 10000
+  commission_per_trade: 0
+  slippage_pips: 1
+  
+  # Position sizing
+  position_size_pct: 1.0
+  max_position_size_pct: 5.0
+  risk_per_trade_pct: 1.0
+  
+  # Trade management
+  max_trades_per_day: 5
+  max_trades_per_setup: 3
+  max_concurrent_trades: 3
+  
+  # Performance analysis
+  calculate_sharpe: true
+  calculate_sortino: true
+  calculate_max_drawdown: true
+  calculate_win_rate: true
+  
+  # Walk-forward optimization
+  walkforward:
+    enabled: false
+    in_sample_days: 60
+    out_sample_days: 30
+    steps: 10
+
+# --- Performance Targets ---
+performance:
+  # Win rate requirements
+  min_win_rate: 60
+  min_trades_for_stats: 20
+  rolling_window_trades: 50
+  
+  # Profitability targets
+  min_profit_factor: 1.5
+  min_sharpe_ratio: 1.0
+  max_drawdown_pct: 15.0
+  
+  # Consistency
+  min_consecutive_wins: 3
+  max_consecutive_losses: 5
+  recovery_factor_target: 2.0
+
+# --- Alert Configuration ---
+alerts:
+  # Alert thresholds
+  min_confidence: 75
+  min_volume_multiplier: 1.5
+  min_rsi_divergence: 5
+  
+  # Alert template
+  template: |
+    🔥 {pair} → {signal} (15min binary)
+    🎯 Pattern: {pattern} at {level_type}
+    📊 Confidence: {confidence}%
+    💰 Price: {price:.5f}
+    📈 RSI: {rsi:.1f}
+    📍 {level_type}: {level_price:.5f}
+    ⏰ Entry: {entry_time}, Expiry: {expiry_time}
+    
+    ⚠️ Not financial advice
+  
+  # Cooldown periods
+  symbol_cooldown_minutes: 15
+  setup_cooldown_minutes: 30
+
+# --- Symbol Specific Settings ---
+symbols:
+  # Default settings apply to all symbols
+  default:
+    pip_size: "auto"  # auto, 0.0001, 0.01
+    lot_size: 100000
+    spread_typical: 2.0
+  
+  # Symbol-specific overrides
+  USD/JPY:
+    pip_size: 0.01
+    spread_typical: 1.5
+    
+  EUR/JPY:
+    pip_size: 0.01
+    spread_typical: 2.0
+    
+  # JPY pairs
+  all_JPY:
+    pip_size: 0.01
+    min_pattern_size_pips: 8
+
+# --- Optimization Parameters ---
+optimization:
+  # Parameters to optimize
+  parameters:
+    rsi_overbought: [60, 65, 70]
+    rsi_oversold: [30, 35, 40]
+    min_touches: [2, 3, 4]
+    touch_window_pips: [10, 15, 20]
+    min_confidence: [65, 70, 75]
+  
+  # Optimization method
+  method: "grid_search"  # grid_search, random_search, bayesian
+  metric: "sharpe_ratio"  # sharpe_ratio, profit_factor, win_rate
+  
+  # Optimization constraints
+  min_trades: 20
+  max_drawdown: 20.0
+  min_win_rate: 55.0
+
+# --- Notes ---
+notes: |
+  This setup detects Hammer and Shooting Star patterns at key support/resistance levels.
+  
+  Key features:
+  1. Triple touch confirmation at S/R levels
+  2. RSI extremes for overbought/oversold conditions
+  3. Volume confirmation for pattern validity
+  4. Candle B confirmation for entry timing
+  
+  For binary options:
+  - 15 minute expiry
+  - Entry at next candle open
+  - Fixed stake percentage
+  
+  Adjust parameters based on:
+  - Market conditions
+  - Symbol volatility
+  - Personal risk tolerance
+  
+  Always backtest before live trading!

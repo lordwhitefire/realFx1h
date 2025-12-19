@@ -1,0 +1,455 @@
+# ==============================================
+# Trading Setup Scanner - Global Configuration
+# ==============================================
+
+# --- API Configuration ---
+api:
+  # Multiple Twelve Data API keys for rate limiting
+  # Each key will be assigned specific pairs
+  api_keys:
+    key1: "51028f824e8e41c898d2205c4ac746dc"
+    key2: "5ebc5bedded547b1a1a3841c563e3361"
+    key3: "3d7be2504bc34dcca28a24d0f2cffc6f"
+    key4: "68bccc957f7e44f39354466abbbc82b2"
+    key5: "af7afd891c8744ffaa8b4c691e51d3b1"
+    key6: "148158e8e6ea482f950a12463300c59a"
+    key7: "f5a8eb0d2dc14b4eb23492c6339cf356"
+    key8: "a1eb69a3b70448f1a356914c75848a94"
+    key9: "2ba1df4b4d934702bbc33abd8d272999"
+  
+  # Pair-to-key assignment mapping
+  # Format: pair_name: key_name
+  pair_assignments:
+    "GBP/CHF": "key1"
+    "AUD/CAD": "key1"
+    "AUD/CHF": "key2"
+    "AUD/JPY": "key2"
+    "AUD/USD": "key3"
+    "CAD/CHF": "key3"
+    "CAD/JPY": "key4"
+    "CHF/JPY": "key4"
+    "EUR/AUD": "key5"
+    "EUR/CAD": "key5"
+    "EUR/CHF": "key6"
+    "EUR/GBP": "key6"
+    "EUR/USD": "key7"
+    "GBP/AUD": "key7"
+    "GBP/CAD": "key8"
+    "GBP/USD": "key8"
+    "USD/CAD": "key9"
+    "USD/CHF": "key9"
+    "USD/JPY": "key9"
+    "EUR/JPY": "key9"
+  
+  # Alternative data sources (optional)
+  alphavantage_key: ""
+  finnhub_key: ""
+  
+  # API rate limiting (requests per minute per key)
+  rate_limit_per_key: 8
+  retry_attempts: 3
+  timeout_seconds: 30
+
+# --- Data Configuration ---
+data:
+  # Timeframe for analysis
+  timeframe: "5min"
+  
+  # Number of candles to fetch
+  ohlc_size: 200
+  
+  # Data quality checks
+  min_data_points: 100
+  allow_gaps: false
+  max_gap_minutes: 60
+  
+  # Caching
+  cache_duration_minutes: 1
+  cache_directory: "data_cache"
+
+# --- Trading Pairs / Symbols ---
+pairs:
+  - GBP/CHF
+  - AUD/CAD
+  - AUD/CHF
+  - AUD/JPY
+  - AUD/USD
+  - CAD/CHF
+  - CAD/JPY
+  - CHF/JPY
+  - EUR/AUD
+  - EUR/CAD
+  - EUR/CHF
+  - EUR/GBP
+  - EUR/USD
+  - GBP/AUD
+  - GBP/CAD
+  - GBP/USD
+  - USD/CAD
+  - USD/CHF
+  - USD/JPY
+  - EUR/JPY
+
+# --- Telegram Configuration ---
+telegram:
+  # Bot credentials (from @BotFather)
+  bot_token: "8380750013:AAEUgVNrYWSk3ATHpLLndBeWEh4amNfMHYE"
+  chat_id: "8599692441"
+  
+  # Alert settings
+  send_alerts: true
+  alert_cooldown_minutes: 1
+  max_alerts_per_hour: 10
+  send_error_alerts: true
+  
+  # Message formatting
+  parse_mode: "HTML"
+  disable_notification: false
+
+# --- Scanner Configuration ---
+scanner:
+  # Operating mode
+  mode: "backtest"  # backtest, live, paper
+  
+  # Scanning schedule
+  scan_interval_minutes: 1
+  start_time: "00:00"
+  end_time: "23:59"
+  
+  # Market hours (UTC)
+  market_open: "00:00"
+  market_close: "23:59"
+  
+  # Session filters
+  ignore_weekends: true
+  ignore_holidays: true
+  
+  # Performance
+  max_concurrent_scans: 3
+  scan_timeout_seconds: 60
+
+# --- Setup Configuration ---
+setups:
+  # Directory containing setup modules
+  directory: "setups"
+  
+  # Default settings for all setups
+  default_timeframe: "5min"
+  default_lookback_candles: 100
+  default_min_confidence: 70
+  
+  # Setup loading
+  auto_reload: false
+  reload_interval_minutes: 60
+
+# --- Backtest Configuration ---
+backtest:
+  # General settings
+  mode: "historical"  # historical, walk_forward, monte_carlo
+  initial_capital: 10000
+  commission_per_trade: 0
+  slippage_pct: 0.01  # 1 pip slippage
+  
+  # Position sizing
+  position_size_pct: 1.0
+  max_position_size_pct: 5.0
+  risk_per_trade_pct: 1.0
+  
+  # Trade management
+  max_trades_per_day: 5
+  max_trades_per_setup: 3
+  max_concurrent_trades: 3
+  
+  # Stop loss / Take profit
+  default_stop_loss_pct: 1.0
+  default_take_profit_pct: 2.0
+  trailing_stop_pct: 0.5
+  
+  # Time-based exits
+  max_holding_period_hours: 4
+  end_of_day_exit: true
+  
+  # Risk management
+  daily_loss_limit_pct: 5.0
+  weekly_loss_limit_pct: 10.0
+  max_drawdown_pct: 15.0
+  
+  # Performance analysis
+  calculate_sharpe: true
+  calculate_sortino: true
+  calculate_max_drawdown: true
+  calculate_win_rate: true
+
+# --- Alert Configuration ---
+alert:
+  # Alert thresholds
+  min_confidence: 75
+  min_volume_multiplier: 1.5
+  min_rsi_divergence: 5
+  
+  # Alert template
+  template: |
+    🔥 {pair} → {signal} ({timeframe})
+    🎯 Pattern: {pattern}
+    📊 Confidence: {confidence}%
+    💰 Price: {price:.5f}
+    📈 RSI: {rsi:.1f}
+    📍 {level_type}: {level_price:.5f}
+    ⏰ Time: {time} UTC
+    
+    ⚠️ Disclaimer: Not financial advice
+  
+  # Cooldown periods
+  symbol_cooldown_minutes: 15
+  setup_cooldown_minutes: 30
+  global_cooldown_minutes: 5
+  
+  # Alert methods (true/false)
+  send_telegram: true
+  send_email: false
+  send_sms: false
+  play_sound: true
+  log_to_file: true
+
+# --- Risk Management ---
+risk:
+  # Position sizing
+  fixed_position_size: 0
+  percentage_position_size: 1.0
+  kelly_position_size: false
+  
+  # Stop loss rules
+  use_stop_loss: true
+  stop_loss_type: "percentage"  # percentage, atr, support_resistance
+  stop_loss_multiplier: 1.0
+  
+  # Take profit rules
+  use_take_profit: true
+  take_profit_type: "percentage"  # percentage, risk_reward, resistance
+  risk_reward_ratio: 2.0
+  
+  # Trade filters
+  min_volume: 1000000
+  min_volatility: 0.001
+  max_spread_pips: 3
+  
+  # Correlation limits
+  max_correlated_trades: 2
+  correlation_threshold: 0.7
+
+# --- Technical Indicators ---
+indicators:
+  # RSI settings
+  rsi_period: 14
+  rsi_overbought: 70
+  rsi_oversold: 30
+  
+  # Moving averages
+  ema_fast: 9
+  ema_slow: 21
+  ema_signal: 50
+  
+  # Bollinger Bands
+  bb_period: 20
+  bb_std_dev: 2.0
+  
+  # ATR (Average True Range)
+  atr_period: 14
+  
+  # MACD
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  
+  # Volume
+  volume_ma_period: 20
+
+# --- Pattern Detection ---
+patterns:
+  # Candlestick patterns
+  detect_hammer: true
+  detect_shooting_star: true
+  detect_engulfing: true
+  detect_doji: true
+  detect_piercing: true
+  detect_dark_cloud: true
+  
+  # Pattern settings
+  min_body_size_pct: 0.1
+  min_shadow_size_pct: 1.0
+  engulfing_min_ratio: 1.5
+  
+  # Support/Resistance
+  detect_support_resistance: true
+  min_touch_count: 3
+  touch_window_pips: 15
+  lookback_period: 100
+
+# --- Filter Configuration ---
+filters:
+  # RSI filters
+  require_rsi_extreme: true
+  rsi_overbought: 65
+  rsi_oversold: 35
+  rsi_divergence: false
+  
+  # Volume filters
+  require_volume_confirmation: true
+  volume_multiplier: 1.8
+  min_volume: 1000000
+  
+  # Trend filters
+  require_trend_alignment: false
+  trend_timeframe: "1h"
+  trend_indicator: "ema"  # ema, sma, trendline
+  
+  # Volatility filters
+  min_atr_pct: 0.001
+  max_atr_pct: 0.05
+  
+  # Time filters
+  avoid_news_events: true
+  news_buffer_minutes: 30
+  avoid_session_open: true
+  session_open_buffer_minutes: 15
+
+# --- Performance Tracking ---
+performance:
+  # Win rate requirements
+  min_win_rate: 60
+  min_trades_for_stats: 20
+  rolling_window_trades: 50
+  
+  # Metrics calculation
+  calculate_sharpe: true
+  calculate_sortino: true
+  calculate_calmar: true
+  calculate_mar: true
+  
+  # Benchmark comparison
+  benchmark_symbol: "SPY"
+  benchmark_timeframe: "1d"
+
+# --- Logging Configuration ---
+logging:
+  # Log levels
+  controller_level: "INFO"
+  setup_level: "DEBUG"
+  alert_level: "INFO"
+  error_level: "ERROR"
+  
+  # Log output
+  log_to_console: true
+  log_to_file: true
+  log_directory: "logs"
+  
+  # Log rotation
+  max_log_size_mb: 10
+  backup_count: 5
+  compress_old_logs: true
+  
+  # Performance logging
+  log_performance: true
+  performance_log_interval_minutes: 60
+
+# --- Reporting Configuration ---
+reporting:
+  # Report generation
+  generate_daily_report: true
+  generate_weekly_report: true
+  generate_monthly_report: true
+  
+  # Report formats
+  save_as_csv: true
+  save_as_json: true
+  save_as_html: false
+  
+  # Chart generation
+  generate_charts: true
+  chart_style: "seaborn"
+  chart_dpi: 100
+  chart_format: "png"
+  
+  # Report destinations
+  report_directory: "reports"
+  email_reports: false
+  telegram_reports: true
+
+# --- System Configuration ---
+system:
+  # Performance settings
+  max_memory_mb: 1024
+  max_threads: 4
+  use_multiprocessing: false
+  
+  # Error handling
+  max_retries: 3
+  retry_delay_seconds: 5
+  stop_on_critical_error: false
+  
+  # Data persistence
+  save_results: true
+  results_directory: "results"
+  backup_enabled: true
+  backup_interval_hours: 24
+  
+  # Monitoring
+  health_check_interval_minutes: 5
+  alert_on_system_issues: true
+
+# --- Email Configuration (Optional) ---
+email:
+  enabled: false
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  username: ""
+  password: ""
+  sender_email: ""
+  recipient_emails: []
+  ssl_enabled: true
+
+# --- Webhook Configuration (Optional) ---
+webhook:
+  enabled: false
+  url: ""
+  secret: ""
+  timeout_seconds: 5
+  retry_attempts: 3
+
+# --- Database Configuration (Optional) ---
+database:
+  enabled: false
+  type: "sqlite"  # sqlite, mysql, postgresql
+  connection_string: "sqlite:///trading.db"
+  backup_enabled: true
+  backup_interval_hours: 6
+
+# --- Version Information ---
+version:
+  major: 1
+  minor: 0
+  patch: 0
+  release_date: "2024-01-01"
+  
+# --- Notes ---
+notes: |
+  Configuration file for Trading Setup Scanner
+  
+  MULTIPLE API KEYS SETUP:
+  - 7 API keys configured
+  - Each key assigned specific pairs (3 pairs per key)
+  - Update key2-key7 with your actual API keys
+  - Pair assignments fixed (no rotation)
+  
+  KEY ASSIGNMENTS:
+  - key1: GBP/CHF, EUR/JPY
+  - key2: AUD/CAD, AUD/CHF, AUD/JPY
+  - key3: AUD/USD, CAD/CHF, CAD/JPY
+  - key4: CHF/JPY, EUR/AUD, EUR/CAD
+  - key5: EUR/CHF, EUR/GBP, EUR/USD
+  - key6: GBP/AUD, GBP/CAD, GBP/USD
+  - key7: USD/CAD, USD/CHF, USD/JPY
+  
+  Update API keys and credentials before use
+  Adjust parameters based on your trading style
+  Test in backtest mode before live trading
