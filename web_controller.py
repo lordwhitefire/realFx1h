@@ -222,34 +222,43 @@ class WebScanner:
     
     async def send_alerts(self, results: Dict[str, Any]) -> None:
         """Send alerts for significant results"""
+        self.logger.info("send_alerts method called - starting alert process")  # New: Confirm method entry
+        
         significant_results = results.get('significant', [])
         
         if not significant_results:
             self.logger.debug("No significant results to alert")
             # Send test message when no results
+            self.logger.info("No significant results - attempting to send test alert")  # New: Log attempt start
             try:
                 # Direct Telegram test message
                 test_message = "TEST: Single scan working! No trading setups found in this scan."
+                self.logger.debug(f"Test message content: {test_message}")  # New: Log message for visibility
                 telegram_sent = await self.alert_manager._send_telegram_alert(test_message)
                 if telegram_sent:
-                    self.logger.info("Sent test alert (no setups found)")
+                    self.logger.info("Test alert sent successfully")  # Updated: More specific success log
                 else:
-                    self.logger.warning("Failed to send test alert")
+                    self.logger.warning("Test alert send returned False - check alert_manager._send_telegram_alert")  # Updated: Log failure with hint
             except Exception as e:
-                self.logger.error(f"Test alert failed: {e}")
+                self.logger.error(f"Test alert attempt failed with exception: {e}")  # Updated: More context
             return
         
+        self.logger.info(f"Found {len(significant_results)} significant results - starting alert sends")  # New: Log before looping
         try:
             success_count = 0
-            for result in significant_results:
+            for i, result in enumerate(significant_results, start=1):
+                self.logger.info(f"Attempting alert send {i}/{len(significant_results)} for result: {result.get('symbol', 'unknown')}")  # New: Log each attempt start with index and key detail
                 alert_sent = await self.alert_manager.send_setup_alert(result)
                 if alert_sent:
                     success_count += 1
+                    self.logger.info(f"Alert send {i} succeeded")  # New: Log success per attempt
+                else:
+                    self.logger.warning(f"Alert send {i} returned False - check alert_manager.send_setup_alert for result: {result}")  # New: Log failure per attempt with result details
             
-            self.logger.info(f"Sent {success_count}/{len(significant_results)} alerts")
+            self.logger.info(f"Alert sending complete: {success_count}/{len(significant_results)} succeeded")  # Updated: More context
             
         except Exception as e:
-            self.logger.error(f"Alert sending failed: {e}")
+            self.logger.error(f"Alert sending loop failed with exception: {e}")  # Updated: More context
 
 
     async def run_single_scan(self) -> bool:
@@ -273,12 +282,10 @@ class WebScanner:
             processed_results = self.process_results(all_results)
             
             # Send alerts (in live mode only)
-            if self.mode == 'live' and processed_results:
+            if self.mode == 'live' :
                 await self.send_alerts(processed_results)
             
-            if self.mode == 'live':
-                await self.send_alerts(processed_results)
-                
+
             self.logger.info(f"Web scan #{self.scan_count} completed successfully")
             return True
             
