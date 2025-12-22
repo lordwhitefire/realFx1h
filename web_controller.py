@@ -251,7 +251,7 @@ class WebScanner:
         except Exception as e:
             self.logger.error(f"Alert sending failed: {e}")
 
-            
+
     async def run_single_scan(self) -> bool:
         """Run a single scanning cycle - main method for web interface"""
         try:
@@ -276,6 +276,9 @@ class WebScanner:
             if self.mode == 'live' and processed_results:
                 await self.send_alerts(processed_results)
             
+            if self.mode == 'live':
+                await self.send_alerts(processed_results)
+                
             self.logger.info(f"Web scan #{self.scan_count} completed successfully")
             return True
             
