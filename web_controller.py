@@ -226,6 +226,17 @@ class WebScanner:
         
         if not significant_results:
             self.logger.debug("No significant results to alert")
+            # Send test message when no results
+            try:
+                # Direct Telegram test message
+                test_message = "TEST: Single scan working! No trading setups found in this scan."
+                telegram_sent = await self.alert_manager._send_telegram_alert(test_message)
+                if telegram_sent:
+                    self.logger.info("Sent test alert (no setups found)")
+                else:
+                    self.logger.warning("Failed to send test alert")
+            except Exception as e:
+                self.logger.error(f"Test alert failed: {e}")
             return
         
         try:
@@ -239,7 +250,8 @@ class WebScanner:
             
         except Exception as e:
             self.logger.error(f"Alert sending failed: {e}")
-    
+
+            
     async def run_single_scan(self) -> bool:
         """Run a single scanning cycle - main method for web interface"""
         try:
