@@ -282,7 +282,7 @@ class WebScanner:
             processed_results = self.process_results(all_results)
             
             # Send alerts (in live mode only)
-            if self.mode == 'live' :
+            if self.mode == 'live' and processed_results:
                 await self.send_alerts(processed_results)
             
 
