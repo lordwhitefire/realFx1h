@@ -104,7 +104,7 @@ pairs:
 # --- Telegram Configuration ---
 telegram:
   # Bot credentials (from @BotFather)
-  bot_token: "8380750013:AAEUgVNrYWSk3ATHpLLndBeWEh4amNfMHYE"
+  bot_token: "8380750013:AAF7lEiQUvkva7N99CMFlTAoatXL7f3YUwY"
   chat_id: "8599692441"
   
   # Alert settings

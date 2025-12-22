@@ -216,6 +216,17 @@ class MainController:
         
         if not significant_results:
             self.logger.debug("No significant results to alert")
+            # Send test message when no results
+            try:
+                # Direct Telegram test message
+                test_message = "TEST: Single scan working! No trading setups found in this scan."
+                telegram_sent = await self.alert_manager._send_telegram_alert(test_message)
+                if telegram_sent:
+                    self.logger.info("Sent test alert (no setups found)")
+                else:
+                    self.logger.warning("Failed to send test alert")
+            except Exception as e:
+                self.logger.error(f"Test alert failed: {e}")
             return
         
         try:
@@ -228,8 +239,8 @@ class MainController:
             self.logger.info(f"Sent {success_count}/{len(significant_results)} alerts")
             
         except Exception as e:
-            self.logger.error(f"Alert sending failed: {e}")
-    
+            self.logger.error(f"Alert sending failed: {e}")   
+
     async def run_backtest(self, days: int = 30) -> Dict[str, Any]:
         """Run historical backtest"""
         if self.mode != 'backtest':
@@ -319,14 +330,17 @@ class MainController:
             # Send alerts (in live mode only)
             if self.mode == 'live' and processed_results:
                 await self.send_alerts(processed_results)
-            
+
+            if self.mode == 'live':
+                await self.send_alerts(processed_results)
+
             self.logger.info(f"Scan #{self.scan_count} completed successfully")
             return True
             
         except Exception as e:
             self.logger.error(f"Scan #{self.scan_count} failed: {e}")
             return False
-    
+ 
     async def run_continuous(self, interval_minutes: int = 1) -> None:
         """Run continuous scanning (live mode only)"""
         if self.mode != 'live':

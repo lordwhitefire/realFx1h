@@ -16,7 +16,7 @@ class AlertManager:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.telegram_bot = None
+        self.bot_token = None  # Store token instead of bot instance
         self.telegram_chat_id = None
         self.config = None
         self.alert_history = []
@@ -39,14 +39,13 @@ class AlertManager:
         try:
             self.config = config
             
-            # Initialize Telegram bot if configured
+            # Store Telegram credentials
             telegram_config = config.get('telegram', {})
             self.telegram_chat_id = telegram_config.get('chat_id')
-            bot_token = telegram_config.get('bot_token')
+            self.bot_token = telegram_config.get('bot_token')
             
-            if bot_token and self.telegram_chat_id:
-                self._initialize_telegram_bot(bot_token)
-                self.logger.info("Telegram bot initialized")
+            if self.bot_token and self.telegram_chat_id:
+                self.logger.info("Telegram bot configured")
             else:
                 self.logger.warning("Telegram not configured or missing credentials")
             
@@ -60,18 +59,21 @@ class AlertManager:
             self.logger.error(f"Failed to initialize Alert Manager: {e}")
             return False
     
-    def _initialize_telegram_bot(self, bot_token: str) -> None:
-        """Initialize Telegram bot with error handling"""
+    def _create_bot_instance(self):
+        """Create a fresh bot instance for each request"""
         try:
             # Lazy import to avoid dependency if not using Telegram
             from telegram import Bot
-            self.telegram_bot = Bot(token=bot_token)
+            if not self.bot_token:
+                self.logger.error("Bot token not configured")
+                return None
+            return Bot(token=self.bot_token)
         except ImportError:
             self.logger.error("python-telegram-bot not installed. Install with: pip install python-telegram-bot")
-            self.telegram_bot = None
+            return None
         except Exception as e:
-            self.logger.error(f"Failed to initialize Telegram bot: {e}")
-            self.telegram_bot = None
+            self.logger.error(f"Failed to create bot instance: {e}")
+            return None
     
     def check_cooldown(self, symbol: str, setup_name: str) -> bool:
         """
@@ -238,7 +240,7 @@ class AlertManager:
     
     async def _send_telegram_alert(self, message: str) -> bool:
         """
-        Send alert via Telegram
+        Send alert via Telegram with retry logic
         
         Args:
             message: Alert message to send
@@ -246,51 +248,80 @@ class AlertManager:
         Returns:
             bool: True if sent successfully
         """
-        if not self.telegram_bot or not self.telegram_chat_id:
+
+        if not self.bot_token or not self.telegram_chat_id:
             self.logger.debug("Telegram not configured, skipping")
             return False
         
-        try:
-            # Split long messages if needed
-            if len(message) > 4000:
-                # Split by lines
-                lines = message.split('\n')
-                chunks = []
-                current_chunk = ""
+        max_retries = 3
+        retry_delay = 1.0  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Create fresh bot instance for each attempt
+                bot = self._create_bot_instance()
+                if not bot:
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(retry_delay)
+                        continue
+                    return False
                 
-                for line in lines:
-                    if len(current_chunk) + len(line) + 1 > 4000:
+                # Split long messages if needed
+                if len(message) > 4000:
+                    # Split by lines
+                    lines = message.split('\n')
+                    chunks = []
+                    current_chunk = ""
+                    
+                    for line in lines:
+                        if len(current_chunk) + len(line) + 1 > 4000:
+                            chunks.append(current_chunk)
+                            current_chunk = line
+                        else:
+                            current_chunk += "\n" + line if current_chunk else line
+                    
+                    if current_chunk:
                         chunks.append(current_chunk)
-                        current_chunk = line
-                    else:
-                        current_chunk += "\n" + line if current_chunk else line
-                
-                if current_chunk:
-                    chunks.append(current_chunk)
-                
-                # Send all chunks
-                for chunk in chunks:
-                    await self.telegram_bot.send_message(
+                    
+                    # Send all chunks
+                    for chunk in chunks:
+                        await bot.send_message(
+                            chat_id=self.telegram_chat_id,
+                            text=chunk,
+                            parse_mode=None
+                        )
+                    
+                    self.logger.debug(f"Sent Telegram alert (multiple messages) - Attempt {attempt + 1}/{max_retries}")
+                else:
+                    # Send single message
+                    await bot.send_message(
                         chat_id=self.telegram_chat_id,
-                        text=chunk,
-                        parse_mode=None  # Use None for plain text
+                        text=message,
+                        parse_mode=None
                     )
+                    self.logger.debug(f"Sent Telegram alert - Attempt {attempt + 1}/{max_retries}")
                 
-                self.logger.debug("Sent Telegram alert (multiple messages)")
-            else:
-                # Send single message
-                await self.telegram_bot.send_message(
-                    chat_id=self.telegram_chat_id,
-                    text=message,
-                    parse_mode=None
-                )
-                self.logger.debug("Sent Telegram alert")
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to send Telegram alert: {e}")
-            return False
+                # MOVE THE PRINT HERE - Outside both if/else blocks
+                print("✅ TELEGRAM SENT!")
+                return True
+                
+            except asyncio.TimeoutError:
+                self.logger.warning(f"Telegram API timeout (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    continue
+                self.logger.error("All retry attempts failed due to timeout")
+                return False
+            except Exception as e:
+                # For other exceptions, we might want to retry or not
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Telegram error (attempt {attempt + 1}/{max_retries}): {e}")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                self.logger.error(f"Failed to send Telegram alert after {max_retries} attempts: {e}")
+                return False
+        
+        return False 
     
     def _send_console_alert(self, message: str, setup_result: Dict[str, Any]) -> None:
         """
@@ -399,7 +430,7 @@ class AlertManager:
     
     async def send_backtest_report(self, report: Dict[str, Any]) -> bool:
         """
-        Send backtest report via Telegram
+        Send backtest report via Telegram with retry logic
         
         Args:
             report: Backtest report dictionary
@@ -407,53 +438,78 @@ class AlertManager:
         Returns:
             bool: True if sent successfully
         """
-        if not self.telegram_bot or not self.telegram_chat_id:
+        if not self.bot_token or not self.telegram_chat_id:
             self.logger.debug("Telegram not configured, skipping backtest report")
             return False
         
-        try:
-            # Create summary message
-            metadata = report.get('metadata', {})
-            exec_summary = report.get('executive_summary', {}).get('overview', {})
-            
-            message = f"📊 BACKTEST REPORT - {metadata.get('report_name', 'Unknown')}\n"
-            message += f"📅 Period: {exec_summary.get('period', 'Unknown')}\n"
-            message += f"📈 Total Trades: {exec_summary.get('total_trades', 0)}\n"
-            message += f"🏆 Win Rate: {exec_summary.get('win_rate', '0%')}\n"
-            message += f"💰 Net Profit: {exec_summary.get('net_profit', '$0.00')}\n"
-            message += f"📊 Profit Factor: {exec_summary.get('profit_factor', '0.00')}\n"
-            message += f"📉 Max Drawdown: {exec_summary.get('max_drawdown', '0.00%')}\n"
-            
-            # Add setup performance if available
-            setup_analysis = report.get('setup_analysis', {})
-            setup_perf = setup_analysis.get('setup_performance', {})
-            
-            if setup_perf:
-                message += f"\n📋 Top Setup Performance:\n"
-                # Get top 3 setups
-                top_setups = list(setup_perf.items())[:3]
-                for setup_name, perf in top_setups:
-                    trades = perf.get('trades', 0)
-                    win_rate = perf.get('win_rate', 0)
-                    if trades > 0:
-                        message += f"• {setup_name}: {win_rate:.1f}% ({trades} trades)\n"
-            
-            # Send via Telegram
-            await self.telegram_bot.send_message(
-                chat_id=self.telegram_chat_id,
-                text=message
-            )
-            
-            self.logger.info("Sent backtest report via Telegram")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to send backtest report: {e}")
-            return False
+        max_retries = 3
+        retry_delay = 1.0  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Create summary message
+                metadata = report.get('metadata', {})
+                exec_summary = report.get('executive_summary', {}).get('overview', {})
+                
+                message = f"📊 BACKTEST REPORT - {metadata.get('report_name', 'Unknown')}\n"
+                message += f"📅 Period: {exec_summary.get('period', 'Unknown')}\n"
+                message += f"📈 Total Trades: {exec_summary.get('total_trades', 0)}\n"
+                message += f"🏆 Win Rate: {exec_summary.get('win_rate', '0%')}\n"
+                message += f"💰 Net Profit: {exec_summary.get('net_profit', '$0.00')}\n"
+                message += f"📊 Profit Factor: {exec_summary.get('profit_factor', '0.00')}\n"
+                message += f"📉 Max Drawdown: {exec_summary.get('max_drawdown', '0.00%')}\n"
+                
+                # Add setup performance if available
+                setup_analysis = report.get('setup_analysis', {})
+                setup_perf = setup_analysis.get('setup_performance', {})
+                
+                if setup_perf:
+                    message += f"\n📋 Top Setup Performance:\n"
+                    # Get top 3 setups
+                    top_setups = list(setup_perf.items())[:3]
+                    for setup_name, perf in top_setups:
+                        trades = perf.get('trades', 0)
+                        win_rate = perf.get('win_rate', 0)
+                        if trades > 0:
+                            message += f"• {setup_name}: {win_rate:.1f}% ({trades} trades)\n"
+                
+                # Create fresh bot instance for each attempt
+                bot = self._create_bot_instance()
+                if not bot:
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(retry_delay)
+                        continue
+                    return False
+                
+                await bot.send_message(
+                    chat_id=self.telegram_chat_id,
+                    text=message
+                )
+                
+                self.logger.info(f"Sent backtest report via Telegram - Attempt {attempt + 1}/{max_retries}")
+                return True
+                
+            except asyncio.TimeoutError:
+                self.logger.warning(f"Telegram API timeout while sending backtest report (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    continue
+                self.logger.error("All retry attempts failed due to timeout")
+                return False
+            except Exception as e:
+                # For other exceptions, retry
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Error sending backtest report (attempt {attempt + 1}/{max_retries}): {e}")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                self.logger.error(f"Failed to send backtest report after {max_retries} attempts: {e}")
+                return False
+        
+        return False
     
     async def send_error_alert(self, error_message: str, context: str = "") -> bool:
         """
-        Send error alert
+        Send error alert with retry logic
         
         Args:
             error_message: Error description
@@ -462,36 +518,47 @@ class AlertManager:
         Returns:
             bool: True if sent successfully
         """
-        try:
-            message = f"🚨 SYSTEM ERROR\n"
-            message += f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            message += f"📝 Context: {context}\n"
-            message += f"❌ Error: {error_message}\n"
-            
-            # Log to console
-            print(f"\n{'='*60}")
-            print("🚨 SYSTEM ERROR")
-            print(f"{'='*60}")
-            print(message)
-            print(f"{'='*60}\n")
-            
-            # Send via Telegram if configured
-            if self.telegram_bot and self.telegram_chat_id:
-                await self.telegram_bot.send_message(
-                    chat_id=self.telegram_chat_id,
-                    text=message
-                )
-            
-            # Log to error file
-            error_log = "logs/errors.log"
-            with open(error_log, 'a') as f:
-                f.write(f"{datetime.now().isoformat()} | {context} | {error_message}\n")
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to send error alert: {e}")
-            return False
+        max_retries = 2  # Fewer retries for error alerts
+        retry_delay = 0.5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                message = f"🚨 SYSTEM ERROR\n"
+                message += f"⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                message += f"📝 Context: {context}\n"
+                message += f"❌ Error: {error_message}\n"
+                
+                # Log to console
+                print(f"\n{'='*60}")
+                print("🚨 SYSTEM ERROR")
+                print(f"{'='*60}")
+                print(message)
+                print(f"{'='*60}\n")
+                
+                # Send via Telegram if configured
+                if self.bot_token and self.telegram_chat_id:
+                    bot = self._create_bot_instance()
+                    if bot:
+                        await bot.send_message(
+                            chat_id=self.telegram_chat_id,
+                            text=message
+                        )
+                
+                # Log to error file
+                error_log = "logs/errors.log"
+                with open(error_log, 'a') as f:
+                    f.write(f"{datetime.now().isoformat()} | {context} | {error_message}\n")
+                
+                return True
+                
+            except (asyncio.TimeoutError, Exception) as e:
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    continue
+                self.logger.error(f"Failed to send error alert after {max_retries} attempts: {e}")
+                return False
+        
+        return False
     
     def clear_cooldowns(self) -> None:
         """Clear all cooldown timers"""
@@ -508,5 +575,5 @@ class AlertManager:
         return {
             'total_alerts_sent': len(self.alert_history),
             'active_cooldowns': len(self.cooldown_tracker),
-            'telegram_configured': self.telegram_bot is not None
+            'telegram_configured': self.bot_token is not None
         }
