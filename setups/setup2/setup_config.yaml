@@ -1,0 +1,264 @@
+# ==============================================
+# Setup2 Configuration - MA Crossover Momentum
+# Binary Options Trading Setup
+# ==============================================
+
+# --- Setup Information ---
+setup_info:
+  name: "setup2"
+  display_name: "MA Crossover Momentum"
+  version: "1.0.0"
+  author: "Trading Setup Scanner"
+  description: "MA Crossover with Stochastic and Bollinger Band confirmation for high-frequency trading"
+  created_date: "2024-01-01"
+  last_modified: "2024-01-01"
+  
+  timeframe: "5min"
+  trade_type: "binary_options"
+  expiry_period: "15min"
+  signal_types: ["CALL", "PUT"]
+  
+  patterns:
+    - "ma_crossover_bullish"
+    - "ma_crossover_bearish"
+  
+  indicators:
+    - "ema_2"
+    - "ema_5"
+    - "ema_100"
+    - "stochastic"
+    - "bollinger_bands"
+  
+  risk_level: "medium"
+  win_rate_target: 58
+  avg_win_loss_ratio: 1.5
+
+# --- Indicator Settings ---
+indicators:
+  ema:
+    fast_period: 2
+    medium_period: 5
+    slow_period: 100
+    
+  stochastic:
+    k_period: 5
+    d_period: 3
+    smooth_k: 3
+    overbought: 85
+    oversold: 15
+    
+  bollinger_bands:
+    period: 20
+    std_dev: 2.0
+    
+  volume:
+    ma_period: 20
+    min_multiplier: 1.2
+
+# --- Filters ---
+filters:
+  stoch_overbought: 70
+  stoch_oversold: 30
+  stoch_extreme_overbought: 85
+  stoch_extreme_oversold: 15
+  
+  require_trend_alignment: true
+  allow_overextension_puts: true
+  
+  ema_touch_lookback: 3
+  ema_touch_distance_pips: 10
+  
+  bb_close_outside_lookback: 2
+  
+  require_volume_confirmation: true
+  volume_multiplier: 1.2
+  
+  max_ema_clustering_pips: 20
+  
+  avoid_news_events: true
+  news_buffer_minutes: 30
+  avoid_session_open: false
+  
+  symbol_cooldown_minutes: 15
+
+# --- Signal Generation Rules ---
+signal:
+  call:
+    primary:
+      - "price_above_ema_100"
+      - "ema_2_cross_above_ema_5"
+    secondary:
+      - "stoch_cross_up"
+      - "stoch_oversold_or_from_oversold"
+      - "ema_100_touch_recent"
+      - "bullish_candle"
+    min_secondary: 2
+    
+  put:
+    primary:
+      - "price_below_ema_100_or_outside_upper_bb"
+      - "ema_2_cross_below_ema_5"
+    secondary:
+      - "stoch_cross_down"
+      - "stoch_overbought_or_from_overbought"
+      - "closed_outside_upper_bb_recent"
+      - "bearish_candle"
+    min_secondary: 2
+  
+  base_confidence: 60
+  stoch_crossover_weight: 10
+  extreme_zone_weight: 10
+  ema_touch_weight: 10
+  bb_rejection_weight: 10
+  strong_candle_weight: 5
+  volume_weight: 5
+  
+  min_confidence: 60
+  min_secondary_conditions: 2
+
+# --- Binary Options Strategy ---
+binary_options:
+  expiry_time: "15min"
+  stake_percentage: 0.5
+  max_stake_percentage: 1.0
+  min_payout_ratio: 0.70
+  
+  entry_time: "next_candle_open"
+  allow_immediate_entry: true
+  max_entry_delay_minutes: 5
+  
+  expiry_type: "time_based"
+  check_expiry_price: true
+  
+  max_trades_per_day: 20
+  max_trades_per_symbol: 5
+  daily_loss_limit: 5.0
+  weekly_loss_limit: 10.0
+
+# --- Regular Trading Strategy ---
+regular_trading:
+  risk_per_trade_pct: 0.5
+  max_position_size_pct: 2.0
+  
+  stop_loss_type: "atr"
+  stop_loss_atr_multiplier: 1.5
+  stop_loss_pct: 0.5
+  
+  take_profit_type: "risk_reward"
+  risk_reward_ratio: 1.5
+  take_profit_pct: 1.0
+  
+  use_trailing_stop: true
+  trailing_stop_pct: 0.3
+  trailing_start_pct: 0.5
+  
+  max_holding_period: "30min"
+
+# --- Risk Management ---
+risk_management:
+  percentage_position_size: true
+  fixed_position_size: 0
+  
+  max_concurrent_trades: 3
+  max_correlated_trades: 2
+  correlation_threshold: 0.7
+  
+  max_daily_drawdown: 3.0
+  max_weekly_drawdown: 7.0
+  pause_trading_on_drawdown: true
+  
+  min_volume: 500000
+  max_spread_pips: 3
+
+# --- Backtest Settings ---
+backtest:
+  mode: "historical"
+  initial_capital: 10000
+  commission_per_trade: 0
+  slippage_pips: 1
+  
+  position_size_pct: 0.5
+  max_position_size_pct: 1.0
+  risk_per_trade_pct: 0.5
+  
+  max_trades_per_day: 20
+  max_trades_per_symbol: 5
+  max_concurrent_trades: 3
+  
+  calculate_sharpe: true
+  calculate_sortino: true
+  calculate_max_drawdown: true
+  calculate_win_rate: true
+
+# --- Performance Targets ---
+performance:
+  min_win_rate: 55
+  min_trades_for_stats: 30
+  rolling_window_trades: 100
+  
+  min_profit_factor: 1.3
+  min_sharpe_ratio: 0.8
+  max_drawdown_pct: 10.0
+  
+  min_consecutive_wins: 2
+  max_consecutive_losses: 7
+  recovery_factor_target: 1.5
+
+# --- Alert Configuration ---
+alerts:
+  min_confidence: 65
+  min_secondary_conditions: 2
+  
+  template: |
+    🚀 {pair} → {signal} (15min binary)
+    🎯 Pattern: {pattern}
+    📊 Confidence: {confidence}%
+    💰 Price: {price:.5f}
+    📈 Trend: {trend}
+    📊 EMA: 2={ema_2:.5f} | 5={ema_5:.5f} | 100={ema_100:.5f}
+    📉 Stoch: K={stoch_k:.1f} | D={stoch_d:.1f}
+    ✅ Secondary: {secondary_conditions}/4
+    ⏰ Entry: Next candle, Expiry: {expiry_time}
+    
+    ⚠️ Not financial advice
+  
+  symbol_cooldown_minutes: 15
+  setup_cooldown_minutes: 5
+
+# --- Symbol Specific Settings ---
+symbols:
+  default:
+    pip_size: "auto"
+    lot_size: 100000
+    spread_typical: 2.0
+  
+  USD/JPY:
+    pip_size: 0.01
+    spread_typical: 1.5
+    
+  EUR/JPY:
+    pip_size: 0.01
+    spread_typical: 2.0
+    
+  GBP/JPY:
+    pip_size: 0.01
+    spread_typical: 2.5
+    
+  all_JPY:
+    pip_size: 0.01
+
+# --- Optimization Parameters ---
+optimization:
+  parameters:
+    stoch_overbought: [65, 70, 75, 80]
+    stoch_oversold: [20, 25, 30, 35]
+    min_confidence: [55, 60, 65, 70]
+    min_secondary_conditions: [2, 3]
+    volume_multiplier: [1.0, 1.2, 1.5]
+  
+  method: "grid_search"
+  metric: "profit_factor"
+  
+  min_trades: 30
+  max_drawdown: 15.0
+  min_win_rate: 50.0
