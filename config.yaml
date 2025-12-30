@@ -69,6 +69,9 @@ data:
   # Number of candles to fetch
   ohlc_size: 200
   
+  timezone: "Africa/Lagos"
+
+
   # Data quality checks
   min_data_points: 100
   allow_gaps: false

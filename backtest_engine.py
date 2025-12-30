@@ -429,13 +429,13 @@ class BacktestEngine:
         entry_time_b = entry_candle_b['timestamp']
         
         # Exit is at opening of Candle C (next candle after entry)
-        exit_candle_c = historical_data.iloc[entry_index + 2]
+        exit_candle_c = historical_data.iloc[entry_index + 4]
         exit_time_c = exit_candle_c['timestamp']
         exit_price_c = exit_candle_c['open']
         
         # Calculate holding period in minutes
         # Assuming 5-minute candles, holding from open of B to open of C = 5 minutes
-        timeframe_minutes = 5  # Default to 5min, should match your config
+        timeframe_minutes = 15  # Default to 5min, should match your config
         holding_minutes = timeframe_minutes
         
         print(f"      Entry Candle B: {entry_time_b}, Open: {entry_candle_b['open']}")

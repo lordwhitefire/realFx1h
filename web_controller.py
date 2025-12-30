@@ -148,8 +148,8 @@ class WebScanner:
                     
                     if result:
                         # Add metadata
-                        result['setup_name'] = setup_name
                         result['symbol'] = symbol
+                        result['setup_name'] = setup_name
                         result['analysis_time'] = datetime.utcnow()
                         
                         all_results.append(result)
@@ -377,7 +377,7 @@ HTML_TEMPLATE = '''
 <html>
 <head>
     <title>Forex Scanner Web</title>
-    <meta http-equiv="refresh" content="60"> <!-- Refresh every 1 minute -->
+    <meta http-equiv="refresh" content="30"> <!-- Refresh every 1 minute -->
     <style>
         body { 
             font-family: 'Courier New', monospace; 
@@ -476,14 +476,14 @@ HTML_TEMPLATE = '''
         <div class="header">
             <h1>⚡ FOREX SCANNER - REALFX1H WEB MODE</h1>
             <p>
-                📡 Live Market Scanning | 🔄 Auto-refresh: 60s | 
+                📡 Live Market Scanning | 🔄 Auto-refresh: 30s | 
                 🕒 Mode: Single Scan | 
                 <span class="symbols">EURUSD GBPUSD USDJPY</span>
             </p>
         </div>
         
         <div class="refresh-notice">
-            ⚡ Page auto-refreshes every 60 seconds to trigger a new market scan.
+            ⚡ Page auto-refreshes every 30 seconds to trigger a new market scan.
             Keep this tab open for continuous operation.
         </div>
         
@@ -508,7 +508,7 @@ HTML_TEMPLATE = '''
                 <strong>🕒 Scan Time:</strong> {{ scan_time }} UTC
             </div>
             <div>
-                <strong>⏱️ Next Scan:</strong> In 60 seconds (auto-refresh)
+                <strong>⏱️ Next Scan:</strong> In 20 seconds (auto-refresh)
             </div>
         </div>
     </div>
@@ -522,7 +522,7 @@ HTML_TEMPLATE = '''
             }
             
             // Show countdown timer
-            var timeLeft = 60;
+            var timeLeft = 30;
             var timerElement = document.querySelector('.timestamp div:last-child');
             
             var countdown = setInterval(function() {
@@ -604,7 +604,7 @@ def health():
         "status": "online",
         "service": "realFx1h Web Scanner",
         "mode": "single_scan",
-        "interval": "60s",
+        "interval": "30s",
         "timestamp": datetime.now().isoformat()
     })
 
@@ -623,7 +623,7 @@ if __name__ == '__main__':
     print("[WEB] Dashboard: http://localhost:5000")
     print("[WEB] API Endpoint: http://localhost:5000/api/scan")
     print("[WEB] Health Check: http://localhost:5000/health")
-    print("[WEB] Auto-refresh: 60 seconds")
+    print("[WEB] Auto-refresh: 30 seconds")
     print("[WEB] =========================================")
     print("[WEB] Keep this tab open in browser for continuous scanning")
     print("[WEB] Each page refresh will trigger a new market scan")

@@ -1,6 +1,7 @@
 """
 Result Aggregator - Collects, filters, and aggregates setup results
 Processes results from all setups and prepares for alerts/reporting
+UPDATED: No filtering - accepts ALL signals just like backtest does
 """
 
 import logging
@@ -16,14 +17,16 @@ class ResultAggregator:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
-        # Configuration defaults
-        self.min_confidence = 70  # Minimum confidence percentage
-        self.max_alerts_per_cycle = 3  # Maximum alerts per scanning cycle
+        # Configuration defaults - NO FILTERING APPLIED
+        self.min_confidence = 0  # Accept ALL confidences (was 70)
+        self.max_alerts_per_cycle = 100  # Accept ALL alerts (was 3)
         self.result_history = []  # Store recent results for analysis
         self.max_history_size = 100
         
         # Performance tracking
         self.performance_stats = {}
+        
+        self.logger.info("ResultAggregator initialized - NO FILTERING MODE (matches backtest)")
     
     def aggregate_results(self, all_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -134,12 +137,13 @@ class ResultAggregator:
     def filter_significant_results(self, all_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Filter results to only significant signals worthy of alerts
+        UPDATED: NO FILTERING - Returns ALL signals with signal_type (matches backtest)
         
         Args:
             all_results: All result dictionaries
             
         Returns:
-            List[Dict[str, Any]]: Filtered significant results
+            List[Dict[str, Any]]: ALL results with signal_type
         """
         if not all_results:
             return []
@@ -147,61 +151,38 @@ class ResultAggregator:
         significant_results = []
         
         for result in all_results:
-            if self._is_significant_result(result):
-                # Add ranking score
+            # ONLY check if signal exists (same as backtest)
+            if result.get('signal_type'):
+                # Add ranking score for sorting only
                 result['alert_score'] = self._calculate_alert_score(result)
                 significant_results.append(result)
+                self.logger.debug(f"Accepted signal: {result.get('setup_name')} on {result.get('symbol')} - {result.get('signal_type')} (confidence: {result.get('confidence', 0)}%)")
         
-        # Sort by alert score (descending)
+        # Sort by alert score (descending) - but DON'T limit count
         significant_results.sort(key=lambda x: x.get('alert_score', 0), reverse=True)
         
-        # Limit number of alerts
-        if len(significant_results) > self.max_alerts_per_cycle:
-            significant_results = significant_results[:self.max_alerts_per_cycle]
+        # NO LIMIT on number of alerts (was limited to max_alerts_per_cycle)
         
-        self.logger.debug(f"Filtered {len(significant_results)} significant results from {len(all_results)} total")
+        self.logger.info(f"NO FILTERING: Accepted ALL {len(significant_results)} signals from {len(all_results)} total results")
         return significant_results
     
     def _is_significant_result(self, result: Dict[str, Any]) -> bool:
         """
-        Check if a result is significant enough to trigger an alert
+        DEPRECATED: Not used anymore - filter_significant_results() accepts ALL signals
+        Kept for backwards compatibility
         
         Args:
             result: Single result dictionary
             
         Returns:
-            bool: True if significant
+            bool: True if has signal_type
         """
-        # Must have a signal type
-        if not result.get('signal_type'):
-            return False
-        
-        # Check minimum confidence
-        confidence = result.get('confidence', 0)
-        if confidence < self.min_confidence:
-            return False
-        
-        # Check if result has required fields
-        required_fields = ['symbol', 'setup_name', 'pattern_name']
-        for field in required_fields:
-            if not result.get(field):
-                return False
-        
-        # Check for recent duplicate signals (based on symbol and setup)
-        if self._is_duplicate_signal(result):
-            return False
-        
-        # Additional significance checks can be added here:
-        # - Volume confirmation
-        # - Multiple time frame alignment
-        # - Support/resistance strength
-        # - News/sentiment alignment
-        
-        return True
+        # Only check if signal exists
+        return bool(result.get('signal_type'))
     
     def _calculate_alert_score(self, result: Dict[str, Any]) -> float:
         """
-        Calculate alert score for ranking results
+        Calculate alert score for ranking results (not filtering)
         
         Args:
             result: Single result dictionary
@@ -234,67 +215,24 @@ class ResultAggregator:
         timeframe_alignment = result.get('timeframe_alignment', 0)
         score += timeframe_alignment * 10
         
-        # Penalty for recent alerts on same symbol/setup
-        if self._is_recent_alert(result):
-            score -= 20
+        # NO penalties for recent alerts - accept ALL signals
         
         # Ensure score is between 0-100
         return max(0, min(100, score))
     
     def _is_duplicate_signal(self, result: Dict[str, Any]) -> bool:
         """
-        Check if this is a duplicate of a recent signal
-        
-        Args:
-            result: Result to check
-            
-        Returns:
-            bool: True if duplicate
+        DEPRECATED: Not used in NO FILTERING mode
+        Kept for backwards compatibility
         """
-        symbol = result.get('symbol')
-        setup_name = result.get('setup_name')
-        signal_type = result.get('signal_type')
-        
-        if not all([symbol, setup_name, signal_type]):
-            return False
-        
-        # Check history for similar recent signals
-        for historical in self.result_history[-10:]:  # Check last 10 results
-            hist_result = historical.get('result', {})
-            
-            if (hist_result.get('symbol') == symbol and
-                hist_result.get('setup_name') == setup_name and
-                hist_result.get('signal_type') == signal_type):
-                
-                # Check if within last 30 minutes
-                hist_time = historical.get('timestamp')
-                if isinstance(hist_time, datetime):
-                    time_diff = (datetime.now() - hist_time).total_seconds() / 60
-                    if time_diff < 30:  # 30 minutes
-                        return True
-        
-        return False
+        return False  # Always return False - no duplicate checking
     
     def _is_recent_alert(self, result: Dict[str, Any]) -> bool:
         """
-        Check if there was a recent alert for this symbol
-        
-        Args:
-            result: Result to check
-            
-        Returns:
-            bool: True if recent alert exists
+        DEPRECATED: Not used in NO FILTERING mode
+        Kept for backwards compatibility
         """
-        symbol = result.get('symbol')
-        
-        if not symbol:
-            return False
-        
-        # Check last 5 alerts in history
-        recent_alerts = [h for h in self.result_history[-5:] 
-                        if h.get('result', {}).get('symbol') == symbol]
-        
-        return len(recent_alerts) > 0
+        return False  # Always return False - no recent alert checking
     
     def _update_history(self, results: List[Dict[str, Any]]) -> None:
         """

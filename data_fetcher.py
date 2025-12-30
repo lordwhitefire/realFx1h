@@ -25,7 +25,8 @@ class DataFetcher:
         self.pair_assignments = {}  # Dictionary of symbol: key_name
         self.key_usage = defaultdict(list)  # Track which pairs use which key
         self.data_cache = {}
-        self.cache_duration = 60  # Cache data for 5 minutes
+        self.cache_duration = 1  # Cache data for 1 minute
+        self.timezone = "Africa/Lagos"  # Default timezone
         
     def load_config(self, config_path: str = 'config.yaml') -> bool:
         """
@@ -64,11 +65,14 @@ class DataFetcher:
                     self.key_usage[key_name].append(pair)
             
             # Extract data settings
-            self.timeframe = self.config.get('data', {}).get('timeframe', '5min')
-            self.ohlc_size = self.config.get('data', {}).get('ohlc_size', 2000)
+            data_config = self.config.get('data', {})
+            self.timeframe = data_config.get('timeframe', '5min')
+            self.ohlc_size = data_config.get('ohlc_size', 144)
+            self.timezone = data_config.get('timezone', 'Africa/Lagos')  # Load timezone from config
             
             print(f"✅ Configuration loaded from {config_path}")
             print(f"   Timeframe: {self.timeframe}, OHLC Size: {self.ohlc_size}")
+            print(f"   Timezone: {self.timezone}")
             print(f"   API Keys loaded: {len(self.api_keys)}")
             
             # Print key assignments
@@ -77,7 +81,7 @@ class DataFetcher:
                 print(f"   {key_name}: {len(pairs)} pairs - {', '.join(pairs[:3])}{'...' if len(pairs) > 3 else ''}")
             
             self.logger.info(f"Configuration loaded from {config_path}")
-            self.logger.info(f"Timeframe: {self.timeframe}, OHLC Size: {self.ohlc_size}")
+            self.logger.info(f"Timeframe: {self.timeframe}, OHLC Size: {self.ohlc_size}, Timezone: {self.timezone}")
             self.logger.info(f"Loaded {len(self.api_keys)} API keys")
             
             return True
@@ -157,6 +161,7 @@ class DataFetcher:
             
             print(f"📡 API Request for {symbol}:")
             print(f"   Using key: {self.pair_assignments[symbol]}")
+            print(f"   Timezone: {self.timezone}")
             print(f"   URL: {url[:100]}...")
             
             self.logger.debug(f"Fetching data for {symbol} from API using key {self.pair_assignments[symbol]}")
@@ -227,13 +232,14 @@ class DataFetcher:
             return None
     
     def _construct_api_url(self, symbol: str, api_key: str) -> str:
-        """Construct API URL for Twelve Data with specific key"""
+        """Construct API URL for Twelve Data with specific key and timezone"""
         base_url = "https://api.twelvedata.com/time_series"
         
         params = {
             'symbol': symbol,
             'interval': self.timeframe,
             'outputsize': self.ohlc_size,
+            'timezone': self.timezone,  # Add timezone parameter
             'apikey': api_key,
             'format': 'JSON'
         }

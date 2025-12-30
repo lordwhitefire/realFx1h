@@ -138,8 +138,8 @@ class MainController:
                     
                     if result:
                         # Add metadata
-                        result['setup_name'] = setup_name
                         result['symbol'] = symbol
+                        result['setup_name'] = setup_name
                         result['analysis_time'] = datetime.utcnow()
                         
                         all_results.append(result)

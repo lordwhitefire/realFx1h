@@ -159,85 +159,35 @@ class AlertManager:
     
     def _create_alert_message(self, setup_result: Dict[str, Any]) -> str:
         """
-        Create formatted alert message from setup result
-        
-        Args:
-            setup_result: Setup analysis result
-            
-        Returns:
-            str: Formatted alert message
+        Create alert message by showing ALL result fields as-is
+        NO TEMPLATE, NO FORMATTING - JUST THE DATA
         """
-        # Extract data from setup result
-        symbol = setup_result.get('symbol', 'Unknown')
-        setup_name = setup_result.get('setup_name', 'Unknown')
-        signal_type = setup_result.get('signal_type', 'Unknown')
-        confidence = setup_result.get('confidence', 0)
-        pattern = setup_result.get('pattern_name', 'Unknown')
+        message_lines = []
         
-        # Get price info
-        current_price = setup_result.get('current_price', 0)
-        entry_price = setup_result.get('entry_price', current_price)
-        target_price = setup_result.get('target_price')
-        stop_price = setup_result.get('stop_price')
+        # Header
+        message_lines.append("🚨 TRADING ALERT")
+        message_lines.append("=" * 30)
         
-        # Get timing info
-        timestamp = setup_result.get('timestamp', datetime.now())
-        if isinstance(timestamp, str):
-            alert_time = timestamp
-        else:
-            alert_time = timestamp.strftime('%Y-%m-%d %H:%M:%S') if hasattr(timestamp, 'strftime') else str(timestamp)
+        # Add EVERY field from the result, in the order they exist
+        for key, value in setup_result.items():
+            # Convert value to string
+            if value is None:
+                value_str = "None"
+            elif isinstance(value, float):
+                value_str = f"{value:.5f}" if abs(value) < 1000 else f"{value:.2f}"
+            elif isinstance(value, dict):
+                value_str = str(value)  # Keep it simple
+            else:
+                value_str = str(value)
+            
+            # Add to message
+            message_lines.append(f"{key}: {value_str}")
         
-        # Get additional info
-        rsi = setup_result.get('rsi', 'N/A')
-        support_resistance = setup_result.get('support_resistance_level', 'N/A')
-        level_type = setup_result.get('level_type', 'N/A')
+        message_lines.append("=" * 30)
         
-        # Create message based on template from config
-        template = self.config.get('alert', {}).get('template', None)
-        
-        if template:
-            # Use custom template
-            message = template.format(
-                pair=symbol,
-                signal=signal_type,
-                time=alert_time,
-                pattern=pattern,
-                rsi=rsi,
-                ema_status='N/A',
-                win_rate=confidence
-            )
-        else:
-            # Default template
-            message = f"🔔 TRADING SETUP ALERT\n"
-            message += f"📊 {symbol} | {setup_name}\n"
-            message += f"📈 Signal: {signal_type}\n"
-            message += f"🎯 Pattern: {pattern}\n"
-            message += f"📊 Confidence: {confidence}%\n"
-            message += f"💰 Current: {current_price:.5f}"
-            
-            if entry_price != current_price:
-                message += f" | Entry: {entry_price:.5f}"
-            
-            if target_price:
-                message += f"\n🎯 Target: {target_price:.5f}"
-            
-            if stop_price:
-                message += f" | ⛔ Stop: {stop_price:.5f}"
-            
-            message += f"\n📊 RSI: {rsi}"
-            
-            if support_resistance != 'N/A':
-                message += f"\n📍 {level_type}: {support_resistance:.5f}"
-            
-            message += f"\n⏰ Alert Time: {alert_time} UTC"
-            
-            # Add risk info if available
-            risk_reward = setup_result.get('risk_reward_ratio')
-            if risk_reward:
-                message += f"\n⚖️ Risk/Reward: 1:{risk_reward:.2f}"
-        
-        return message
-    
+        return "\n".join(message_lines)
+
+
     async def _send_telegram_alert(self, message: str) -> bool:
         """
         Send alert via Telegram with retry logic
