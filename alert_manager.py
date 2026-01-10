@@ -1,4 +1,4 @@
-"""
+""""
 Alert Manager - Handles all alert notifications
 Sends alerts via Telegram and other channels
 """
